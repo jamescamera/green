@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Walking Men Worldwide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800;900&family=Overpass+Mono:wght@400;600;700&display=swap">
+<style>
+  /* One deliberate look: a street at night. The page stays dark in every theme. */
+  :root {
+    color-scheme: dark;
+    --night: #06090a;
+    --street: #0b1011;
+    --housing-hi: #232a2c;
+    --housing-lo: #101415;
+    --ink: #dfe7e3;
+    --dim: #7f8d88;
+    --faint: #33403d;
+    --line: #1b2324;
+    --amber: #ffae1a;
+    --red: #ff4a2e;
+    --go: #3fe0a0;
+    --display: "Overpass", "Highway Gothic", "Arial Narrow", system-ui, sans-serif;
+    --mono: "Overpass Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--night); }
+  body {
+    margin: 0;
+    min-height: 100%;
+    background:
+      radial-gradient(1200px 600px at 20% -10%, #10201b 0%, transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, #1a130d 0%, transparent 55%),
+      var(--night);
+    color: var(--ink);
+    font: 400 15px/1.5 var(--display);
+    padding-inline: max(16px, env(safe-area-inset-left, 0px));
+    padding-block: 0 48px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; }
+
+  /* ---------- header ---------- */
+  header.top { padding-block: 48px 20px; display: grid; gap: 18px; }
+  .eyebrow {
+    margin: 0; font: 600 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim);
+  }
+  h1 {
+    margin: 0;
+    font: 900 clamp(44px, 9vw, 112px)/.86 var(--display);
+    letter-spacing: -.02em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+  h1 .lit { color: var(--go); text-shadow: 0 0 18px color-mix(in oklab, var(--go) 55%, transparent), 0 0 2px var(--go); }
+  .lede { margin: 0; max-width: 60ch; color: #b4c1bc; font-size: 17px; }
+  .status { display: flex; flex-wrap: wrap; gap: 18px; font: 600 13px/1 var(--mono); color: var(--dim); }
+  .status b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .pip { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: 0; }
+  .pip.g { background: var(--go); box-shadow: 0 0 8px var(--go); }
+  .pip.r { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .pip.a { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+
+  /* zebra crossing divider */
+  .zebra {
+    height: 40px; margin-block: 8px 22px; border-radius: 3px;
+    background: repeating-linear-gradient(90deg, rgba(230,236,232,.10) 0 34px, transparent 34px 60px);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+
+  /* ---------- controller cabinet ---------- */
+  .cabinet {
+    display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between;
+    padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(#11171800, #0d1213);
+    margin-bottom: 28px;
+  }
+  .group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .group > .label { font: 600 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-right: 4px; }
+  .seg { display: inline-flex; border: 1px solid #263032; border-radius: 8px; overflow: hidden; }
+  .seg button, .btn {
+    appearance: none; border: 0; background: #141a1b; color: var(--ink);
+    font: 600 13px/1 var(--display); padding: 10px 13px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .seg button + button { border-left: 1px solid #263032; }
+  .seg button[aria-pressed="true"] { background: #1f2b28; color: #fff; box-shadow: inset 0 -2px 0 var(--go); }
+  .btn { border: 1px solid #263032; border-radius: 8px; }
+  .btn:hover, .seg button:hover { background: #1b2324; }
+  .btn.wave { border-color: color-mix(in oklab, var(--go) 45%, #263032); color: #c9ffe8; }
+  .btn.wave:hover { background: #13241d; }
+  button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  /* ---------- grid of signals ---------- */
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 16px; }
+  @media (min-width: 520px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 760px) { .grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 30px 20px; } }
+
+  .signal {
+    appearance: none; border: 0; background: none; color: inherit; padding: 0; cursor: pointer; text-align: left;
+    display: grid; gap: 10px; font: inherit; border-radius: 16px;
+  }
+  .signal:focus-visible { outline: 2px solid var(--amber); outline-offset: 6px; }
+
+  .housing {
+    position: relative; border-radius: 14px; padding: 16px 10px 8px;
+    background:
+      radial-gradient(circle at 9px 9px, #3a4446 0 1.6px, transparent 2.2px),
+      radial-gradient(circle at calc(100% - 9px) 9px, #3a4446 0 1.6px, transparent 2.2px),
+      linear-gradient(170deg, var(--housing-hi), var(--housing-lo) 70%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07), inset 0 -1px 0 rgba(0,0,0,.6), 0 14px 26px -8px rgba(0,0,0,.7);
+    transition: transform .25s ease;
+  }
+  .signal:hover .housing { transform: translateY(-3px); }
+  .visor {
+    position: absolute; left: 7px; right: 7px; top: 9px; height: 13px; z-index: 2; pointer-events: none;
+    border-radius: 9px 9px 3px 3px;
+    background: linear-gradient(#2b3436, #0c0f10);
+    box-shadow: 0 6px 10px -2px rgba(0,0,0,.75);
+  }
+  .lens {
+    --c: #000;
+    position: relative; aspect-ratio: 100 / 130; max-width: 100%; border-radius: 10px; overflow: hidden;
+    background: radial-gradient(ellipse at 50% 58%, #0a0e0e 0%, #030505 75%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), inset 0 10px 18px rgba(0,0,0,.85);
+  }
+  .lens.on {
+    background: radial-gradient(ellipse at 50% 58%, color-mix(in oklab, var(--c) 17%, #030505) 0%, #030505 74%);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c) 18%, transparent), inset 0 10px 18px rgba(0,0,0,.8), 0 0 34px -10px var(--c);
+  }
+  /* fresnel rings and a glass highlight over every lens */
+  .lens::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(120% 60% at 22% 8%, rgba(255,255,255,.07), transparent 55%),
+      repeating-radial-gradient(circle at 50% 52%, rgba(255,255,255,.028) 0 1px, transparent 1px 5px);
+  }
+  .lens svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .lens.flicker { animation: flicker .6s steps(1, end); }
+  @keyframes flicker { 0% { opacity: 0 } 12% { opacity: 1 } 22% { opacity: .15 } 34% { opacity: .9 } 44% { opacity: .3 } 56%, 100% { opacity: 1 } }
+
+  .foot { display: flex; justify-content: space-between; align-items: center; padding: 7px 4px 0; }
+  .grille { display: flex; gap: 3px; }
+  .grille i { width: 3px; height: 3px; border-radius: 50%; background: #050707; box-shadow: 0 1px 0 rgba(255,255,255,.06); }
+  .count {
+    position: relative; font: 700 15px/1 var(--mono); letter-spacing: .04em; font-variant-numeric: tabular-nums;
+    color: rgba(255,174,26,.07); padding: 2px 4px; background: #070909; border-radius: 3px;
+  }
+  .count span { position: absolute; right: 4px; top: 2px; color: var(--amber); text-shadow: 0 0 6px color-mix(in oklab, var(--amber) 70%, transparent); }
+
+  .meta { display: grid; gap: 2px; padding-inline: 2px; }
+  .city { font: 800 13px/1.2 var(--display); letter-spacing: .08em; text-transform: uppercase; }
+  .kind { font: 400 11px/1.3 var(--mono); color: var(--dim); }
+
+  footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--dim); font: 400 12px/1.6 var(--mono); display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+
+  /* ---------- crossing view (dialog) ---------- */
+  dialog {
+    width: min(860px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid #222b2d; border-radius: 18px;
+    background: linear-gradient(#0e1314, #080b0c); color: var(--ink); overflow: auto;
+  }
+  dialog::backdrop { background: rgba(2,4,4,.78); backdrop-filter: blur(4px); }
+  .stand { display: grid; grid-template-columns: auto 1fr; gap: 28px; padding: 28px; align-items: start; }
+  @media (max-width: 620px) { .stand { grid-template-columns: 1fr; justify-items: center; padding: 20px; } .info { justify-self: stretch; } }
+  .pole { display: grid; gap: 14px; justify-items: center; }
+  .head2 {
+    width: clamp(150px, 26vw, 200px); display: grid; gap: 12px; padding: 18px 14px 12px; border-radius: 18px; position: relative;
+    background:
+      radial-gradient(circle at 10px 10px, #3a4446 0 1.8px, transparent 2.4px),
+      radial-gradient(circle at calc(100% - 10px) 10px, #3a4446 0 1.8px, transparent 2.4px),
+      linear-gradient(170deg, #262e30, #0f1314 70%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 24px 40px -12px rgba(0,0,0,.8);
+  }
+  .cell { position: relative; }
+  .cell .visor { top: -8px; left: -4px; right: -4px; height: 16px; }
+  .head2 .count { justify-self: end; font-size: 22px; }
+  .head2 .count span { top: 2px; }
+  .pushbox {
+    width: clamp(120px, 20vw, 150px); padding: 12px; border-radius: 12px; display: grid; gap: 10px; justify-items: center;
+    background: linear-gradient(#e7b727, #b98a0f); color: #1a1405; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 14px 26px -8px rgba(0,0,0,.8);
+  }
+  .wait {
+    font: 800 13px/1 var(--display); letter-spacing: .2em; padding: 6px 10px; border-radius: 4px; background: #231a08; color: #3b2c0c;
+  }
+  .wait.on { color: #ffd76a; text-shadow: 0 0 8px #ffb21a; background: #2a1e05; }
+  .push {
+    width: 64px; height: 64px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center;
+    background: radial-gradient(circle at 35% 30%, #fafafa, #9aa1a3 55%, #5d6567);
+    box-shadow: 0 0 0 5px #2a2a26, 0 0 0 7px #0d0d0c, 0 6px 10px rgba(0,0,0,.6);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .push:active, .push.pressed { transform: scale(.94); box-shadow: 0 0 0 5px #2a2a26, 0 0 0 7px #0d0d0c, 0 2px 4px rgba(0,0,0,.6); }
+  .push svg { width: 30px; height: 30px; }
+  .pushbox small { font: 800 10px/1.2 var(--display); letter-spacing: .12em; text-transform: uppercase; text-align: center; }
+
+  .info { display: grid; gap: 14px; align-content: start; position: relative; min-width: 0; }
+  .close { position: absolute; right: 0; top: 0; width: 40px; height: 40px; justify-content: center; font-size: 20px; padding: 0; }
+  .info h2 { margin: 0; font: 900 clamp(34px, 6vw, 56px)/.95 var(--display); text-transform: uppercase; letter-spacing: -.01em; text-wrap: balance; padding-right: 44px; }
+  .info .kind { font-size: 13px; }
+  .readout {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; background: #070a0a; border: 1px solid var(--line);
+    font: 700 15px/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase;
+  }
+  .readout .pip { margin: 0; flex: none; }
+  .hint { margin: 0; color: #a5b3ae; max-width: 44ch; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn[aria-pressed="true"] { background: #1f2b28; box-shadow: inset 0 -2px 0 var(--amber); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lens.flicker { animation: none; }
+    .housing, .push { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">Pedestrian signals &middot; 42 cities</p>
+    <h1>Walking Men <span class="lit">Worldwide</span></h1>
+    <p class="lede">Every little green man from Valdivia to Cuzco, wired up and running on its own cycle. Each one walks, flashes a countdown, then turns red. Tap a signal to stand at its crossing and press the button.</p>
+    <div class="status" aria-live="off">
+      <span><i class="pip g"></i><b id="nWalk">0</b> walking</span>
+      <span><i class="pip a"></i><b id="nFlash">0</b> clearing</span>
+      <span><i class="pip r"></i><b id="nStop">0</b> waiting</span>
+    </div>
+  </header>
+
+  <div class="zebra" aria-hidden="true"></div>
+
+  <section class="cabinet" aria-label="Signal controller">
+    <div class="group">
+      <span class="label">Phase</span>
+      <div class="seg" role="group" aria-label="Signal phase">
+        <button type="button" id="modeCycle" data-mode="cycle" aria-pressed="true">Cycle</button>
+        <button type="button" id="modeWalk" data-mode="walk" aria-pressed="false">All walk</button>
+        <button type="button" id="modeStop" data-mode="stop" aria-pressed="false">All stop</button>
+      </div>
+      <button type="button" class="btn wave" id="waveBtn">Green wave</button>
+    </div>
+    <div class="group">
+      <span class="label">Show</span>
+      <div class="seg" role="group" aria-label="Filter signals">
+        <button type="button" id="fAll" data-filter="all" aria-pressed="true">All 42</button>
+        <button type="button" id="fSolid" data-filter="solid" aria-pressed="false">Solid lens</button>
+        <button type="button" id="fLed" data-filter="led" aria-pressed="false">LED</button>
+      </div>
+      <button type="button" class="btn" id="animBtn" aria-pressed="true">Walking animation</button>
+    </div>
+  </section>
+
+  <main class="grid" id="grid"></main>
+
+  <footer>
+    <span>Figures redrawn after the &ldquo;Walking Men Worldwide&rdquo; poster.</span>
+    <span>Walk &rarr; flashing countdown &rarr; don&rsquo;t walk &rarr; repeat</span>
+  </footer>
+</div>
+
+<dialog id="crossing" aria-labelledby="mCity">
+  <div class="stand">
+    <div class="pole">
+      <div class="head2">
+        <div class="cell"><div class="visor"></div><div class="lens" id="lensR"></div></div>
+        <div class="cell"><div class="visor"></div><div class="lens" id="lensG"></div></div>
+        <div class="count" aria-hidden="true">88<span id="mCount"></span></div>
+      </div>
+      <div class="pushbox">
+        <span class="wait" id="waitLamp">WAIT</span>
+        <button type="button" class="push" id="pushBtn" aria-label="Press to cross">
+          <svg viewBox="0 0 30 30" aria-hidden="true"><path d="M4 15h18M15 7l8 8-8 8" fill="none" stroke="#1e2426" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <small>Press to cross</small>
+      </div>
+    </div>
+    <div class="info">
+      <button type="button" class="btn close" id="closeBtn" aria-label="Close">&times;</button>
+      <p class="eyebrow" id="mIndex">1 / 42</p>
+      <h2 id="mCity">Valdivia</h2>
+      <p class="kind" id="mKind">Solid lens</p>
+      <div class="readout"><i class="pip r" id="mPip"></i><span id="mState">Don&rsquo;t walk</span></div>
+      <p class="hint" id="mHint">Press the button while the man is red. The wait lamp lights and the signal changes shortly after.</p>
+      <div class="row">
+        <button type="button" class="btn" id="soundBtn" aria-pressed="false">Crossing sound: off</button>
+      </div>
+      <div class="row">
+        <button type="button" class="btn" id="prevBtn">&larr; Previous</button>
+        <button type="button" class="btn" id="nextBtn">Next &rarr;</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ================= city figures =================
+     Every figure is built from a small skeleton (hip, shoulder, knees, elbows, head)
+     and drawn in one of five lens styles:
+       solid   – a lit silhouette, optionally with prismatic texture
+       dots    – LED matrix filling the silhouette
+       ring    – LED matrix tracing the silhouette's outline
+       stick   – single lines of LEDs along the limbs
+       (solid + segmented/blocky flags for Warsaw and Cannes) */
+  const RED = "#ff4a2e";
+  const D = {
+    style: "solid", color: "#3fe0a0", headR: 8.5, neck: 3, torso: 31, leg: 50, arm: 40,
+    w: 8, tw: 13, lean: 4, stride: 24, armSwing: 28, elbow: 12, knee: 26, foot: 5,
+    texture: null, cap: "round", dot: 4, dotR: 1.3, hex: false, ring: 3, gap: 5, dotW: 2.2
+  };
+  const CITIES = [
+    { name: "Valdivia", color: "#3fd3b0", texture: "hatch", tw: 14, w: 8.5, stride: 26 },
+    { name: "Santiago", style: "stick", color: "#72e06a", gap: 4.6, dotW: 2.3, headR: 7 },
+    { name: "Rio de Janeiro", color: "#ffbe3b", w: 7.5, stride: 22, lean: 2 },
+    { name: "Madrid", color: "#58e3d3", texture: "fresnel", stride: 30, armSwing: 34 },
+    { name: "Boston", style: "dots", color: "#f2f5ef", dot: 4.2, dotR: 1.35, hex: true, w: 9.5, tw: 15 },
+    { name: "Sydney", color: "#39c46e", texture: "hatch", lean: 7 },
+    { name: "Singapore", style: "ring", color: "#45d6b4", dot: 3.2, dotR: 1.05, ring: 3.2, w: 9, tw: 14 },
+    { name: "Amersfoort", color: "#3fce8f", texture: "grid", ponytail: true, lean: 8, stride: 28, headR: 7.5 },
+    { name: "Algiers", color: "#5de2de", texture: "grid", stride: 20, armSwing: 22 },
+    { name: "Hong Kong", color: "#3cd58e", texture: "hatch", w: 9, tw: 15 },
+    { name: "Geneva", style: "stick", color: "#e8fff2", gap: 5.4, dotW: 2.4, stride: 22 },
+    { name: "Córdoba", color: "#c9a27c", w: 9, tw: 14, lean: 6 },
+    { name: "Vienna", color: "#8fe3f0", w: 7, tw: 12, stride: 22, armSwing: 22 },
+    { name: "Marseilles", style: "stick", color: "#b6f06a", gap: 4.6, dotW: 1.8 },
+    { name: "Paris", style: "dots", color: "#a6f25a", dot: 3.8, dotR: 1.4, w: 10, tw: 15 },
+    { name: "Kathmandu", style: "dots", color: "#49d17c", dot: 5, dotR: 1.15, w: 11, tw: 16, lean: 8 },
+    { name: "Moscow", color: "#3fc9c0", texture: "fresnel", lean: 12, stride: 22 },
+    { name: "New York", style: "stick", color: "#f4f1e8", gap: 6, dotW: 2.4, lean: 6 },
+    { name: "Jerusalem", color: "#35c98a", texture: "grid", headR: 9.5, tw: 15 },
+    { name: "Mexico City", style: "stick", color: "#5ee39a", gap: 4.4, dotW: 2.4, stride: 36, elbow: 85, lean: 14, knee: 60, armSwing: 42, torso: 28 },
+    { name: "Lisbon", color: "#35d68e", stride: 30, w: 9, tw: 15 },
+    { name: "Montreal", style: "dots", color: "#e6cdb4", dot: 2.6, dotR: 1.05, w: 10, tw: 17, stride: 22 },
+    { name: "Warsaw", color: "#6fd66a", texture: "hatch", segmented: true, w: 10, tw: 15, headR: 10.5 },
+    { name: "Kolkata", style: "stick", color: "#58d6a0", gap: 4.2, dotW: 1.5, lean: 3 },
+    { name: "Lyon", color: "#3fd29a", lean: 15, headR: 7.5, stride: 26 },
+    { name: "Corunna", color: "#4fd8d0", texture: "fresnel", dress: true, bow: true, headR: 8, stride: 16, armSwing: 18, w: 6.5 },
+    { name: "Puno", style: "dots", color: "#59e07a", dot: 2.8, dotR: 1.1, w: 10, tw: 16, lean: 6 },
+    { name: "Tokyo", color: "#ff8a1f", texture: "fresnel", hat: true, lean: 10, stride: 26, w: 9, tw: 15 },
+    { name: "London", color: "#3fe0a0", stride: 28 },
+    { name: "Saragossa", style: "dots", color: "#f5f5f0", dot: 5, dotR: 1.8, hex: true, w: 11, tw: 17 },
+    { name: "Beijing", color: "#2fc47a", texture: "hatch", w: 9, tw: 15 },
+    { name: "Andorra", style: "stick", color: "#6fe3b0", gap: 4.8, dotW: 2.6, custom: "andorra" },
+    { name: "Barcelona", color: "#43d9a4", texture: "grid", stride: 28, w: 9, tw: 15 },
+    { name: "Cuenca", style: "ring", color: "#dff5ea", dot: 3.4, dotR: 1.05, ring: 2.8, w: 8, tw: 13 },
+    { name: "Cannes", color: "#27d27a", blocky: true, w: 12, tw: 19, headR: 9.5, stride: 20, armSwing: 30, elbow: 55, lean: 8 },
+    { name: "Chicago", color: "#f3f1ea", lean: 8, stride: 24, w: 8.5, tw: 14 },
+    { name: "Istanbul", style: "dots", color: "#4fd49a", dot: 4.6, dotR: 1.05, w: 11, tw: 15 },
+    { name: "Rome", color: "#2fbf78", texture: "hatch", w: 10, tw: 16 },
+    { name: "Buenos Aires", color: "#ffb347", w: 8, tw: 14, lean: 5 },
+    { name: "Hoi An", style: "dots", color: "#8ff0c8", dot: 5.2, dotR: 1.9, hex: true, w: 11, tw: 16 },
+    { name: "Cape Town", color: "#2fcf86", texture: "fresnel", w: 9, tw: 15 },
+    { name: "Cuzco", style: "ring", color: "#7fe8b8", dot: 3.6, dotR: 1.3, ring: 3.4, w: 9, tw: 14 }
+  ].map((c) => Object.assign({}, D, c));
+
+  const kindOf = (p) => {
+    if (p.style === "dots") return "LED matrix";
+    if (p.style === "ring") return "LED outline";
+    if (p.style === "stick") return "LED line";
+    if (p.segmented) return "Segmented lens";
+    if (p.blocky) return "Block lens";
+    if (p.dress) return "Solid lens, girl in a dress";
+    if (p.ponytail) return "Solid lens, woman";
+    if (p.hat) return "Solid lens, hat";
+    return p.texture ? "Solid lens, prismatic" : "Solid lens";
+  };
+  const familyOf = (p) => (p.style === "solid" ? "solid" : "led");
+
+  /* ================= skeleton ================= */
+  const rad = (d) => (d * Math.PI) / 180;
+  const pt = (o, len, ang) => [o[0] + len * Math.sin(ang), o[1] + len * Math.cos(ang)];
+  const f1 = (n) => Math.round(n * 10) / 10;
+  const P = (q) => f1(q[0]) + " " + f1(q[1]);
+  const poly = (pts) => "M" + pts.map(P).join("L");
+
+  function shapeFor(p, stand, phase) {
+    if (p.custom === "andorra") return andorra(stand ? 0 : Math.sin(phase));
+    const L = stand ? 0 : rad(p.lean);
+    const s = Math.sin(phase);
+    const thigh = p.leg * 0.52, shin = p.leg * 0.48, upper = p.arm * 0.5, fore = p.arm * 0.5;
+    const H = [0, 0];
+    const S = pt(H, p.torso, Math.PI - L);
+    const C = pt(S, p.neck + p.headR, Math.PI - L * 1.25);
+    const legs = [], arms = [];
+    for (const g of [1, -1]) {
+      let a, kb, b, eb;
+      if (stand) { a = rad(9) * g; kb = 0; b = rad(15) * g; eb = rad(-5) * g; } // front-facing: legs apart, arms out
+      else {
+        const v = s * g;
+        a = rad(p.stride) * v;
+        kb = rad(p.knee) * (0.12 + Math.max(0, -v) * 0.88);
+        b = -rad(p.armSwing) * v + L * 0.4;
+        eb = rad(p.elbow) * (0.35 + 0.65 * Math.max(0, -v));
+      }
+      const K = pt(H, thigh, a), sa = a - kb, F = pt(K, shin, sa);
+      const fd = stand ? g : 1; // standing feet point outward
+      const T = [F[0] + fd * p.foot * Math.cos(sa), F[1] - fd * p.foot * Math.sin(sa)];
+      legs.push([H, K, F, T]);
+      const E = pt(S, upper, b), W = pt(E, fore, b + eb);
+      arms.push([S, E, W]);
+    }
+    // place on the ground and centre in the 100 x 130 lens
+    const standH = p.leg + p.torso + p.neck + 2 * p.headR;
+    const ground = 65 + standH / 2 + p.w / 2 - 2;
+    const lowest = Math.max(...legs.flatMap((l) => [l[2][1], l[3][1]]));
+    const dx = stand ? 50 : 50 - (S[0] + H[0]) / 2 - 1, dy = ground - p.w / 2 - lowest;
+    const m = (q) => [q[0] + dx, q[1] + dy];
+    const hS = m(S), hH = m(H), hC = m(C);
+    const shape = { strokes: [], fills: [], circles: [] };
+
+    if (p.segmented) {
+      const bone = (a, b, w) => {
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]), cut = w * 0.5 + 1.4;
+        if (len <= cut * 2) return;
+        const ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len;
+        shape.strokes.push({ d: poly([[a[0] + ux * cut, a[1] + uy * cut], [b[0] - ux * cut, b[1] - uy * cut]]), w });
+      };
+      bone(hS, hH, p.tw);
+      legs.forEach((l) => { bone(hH, m(l[1]), p.w); bone(m(l[1]), m(l[3]), p.w); });
+      arms.forEach((a) => { bone(hS, m(a[1]), p.w); bone(m(a[1]), m(a[2]), p.w); });
+    } else {
+      legs.forEach((l) => shape.strokes.push({ d: poly(l.map(m)), w: p.w }));
+      arms.forEach((a) => shape.strokes.push({ d: poly(a.map(m)), w: p.w * 0.92 }));
+      if (p.dress) {
+        const t = p.tw;
+        shape.fills.push({ d: poly([[hS[0] - t * 0.42, hS[1]], [hS[0] + t * 0.42, hS[1]], [hH[0] + t * 1.15, hH[1] + 11], [hH[0] - t * 1.15, hH[1] + 11]]) + "Z" });
+      } else {
+        shape.strokes.push({ d: poly([hS, hH]), w: stand ? p.tw * 1.45 : p.tw });
+      }
+    }
+    const r = p.headR;
+    shape.circles.push({ cx: hC[0], cy: hC[1], r });
+    if (p.hat) {
+      shape.fills.push({ d: `M${f1(hC[0] - r * 1.7)} ${f1(hC[1] - r * 0.62)}h${f1(r * 3.4)}v${f1(r * 0.42)}h${f1(-r * 3.4)}Z` });
+      shape.fills.push({ d: `M${f1(hC[0] - r * 0.95)} ${f1(hC[1] - r * 1.5)}h${f1(r * 1.9)}v${f1(r * 0.95)}h${f1(-r * 1.9)}Z` });
+    }
+    if (p.ponytail) {
+      const sw = stand ? 0 : Math.cos(phase) * r * 0.5;
+      shape.strokes.push({ d: `M${P([hC[0] - r * 0.5, hC[1] - r * 0.6])}Q${P([hC[0] - r * 2, hC[1] - r * 1.1 + sw])} ${P([hC[0] - r * 2.5, hC[1] + r * 0.4 + sw])}`, w: r * 0.6 });
+    }
+    if (p.bow) {
+      shape.circles.push({ cx: hC[0] - r * 1.05, cy: hC[1] - r * 0.55, r: r * 0.36 });
+      shape.circles.push({ cx: hC[0] - r * 1.45, cy: hC[1] - r * 0.15, r: r * 0.33 });
+    }
+    return shape;
+  }
+
+  // Andorra's signal is an abstract figure: a head, a wave for the arms, and an arch for the legs.
+  function andorra(k) {
+    return {
+      strokes: [
+        { d: `M16 ${f1(62 + 6 * k)}C30 ${f1(38 - 5 * k)} 44 40 52 55S76 ${f1(72 + 4 * k)} 88 ${f1(48 - 6 * k)}`, w: 5 },
+        { d: `M${f1(22 - 4 * k)} 116C26 ${f1(80 + 4 * k)} 76 ${f1(80 - 4 * k)} ${f1(80 + 4 * k)} 116`, w: 5 }
+      ],
+      fills: [],
+      circles: [{ cx: 55 + 2 * k, cy: 30, r: 7.5 }]
+    };
+  }
+
+  /* ================= SVG rendering ================= */
+  const RECT = '<rect width="100" height="130"';
+
+  function silhouette(shape, p, extra, col) {
+    const cap = p.blocky ? "square" : "round", join = p.blocky ? "miter" : "round";
+    let out = "";
+    for (const s of shape.strokes) out += `<path d="${s.d}" fill="none" stroke="${col}" stroke-width="${f1(s.w + extra * 2)}" stroke-linecap="${cap}" stroke-linejoin="${join}"/>`;
+    for (const f of shape.fills) out += `<path d="${f.d}" fill="${col}" stroke="${col}" stroke-width="${f1(1.5 + extra * 2)}" stroke-linejoin="${join}"/>`;
+    for (const c of shape.circles) out += `<circle cx="${f1(c.cx)}" cy="${f1(c.cy)}" r="${f1(c.r + extra)}" fill="${col}"/>`;
+    return out;
+  }
+
+  function dotPattern(id, p, fill, core) {
+    const s = p.dot, r = p.dotR;
+    const dot = (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="${fill}"/>` + (core ? `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(r * 0.45)}" fill="#fff" fill-opacity=".45"/>` : "");
+    if (p.hex) {
+      const h = s * 1.732;
+      return `<pattern id="${id}" width="${s}" height="${f1(h)}" patternUnits="userSpaceOnUse">${dot(s / 2, h * 0.25)}${dot(0, h * 0.75)}${dot(s, h * 0.75)}</pattern>`;
+    }
+    return `<pattern id="${id}" width="${s}" height="${s}" patternUnits="userSpaceOnUse">${dot(s / 2, s / 2)}</pattern>`;
+  }
+
+  function texturePattern(id, kind) {
+    if (kind === "hatch") return `<pattern id="${id}" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="3" height="1.1" fill="#000" fill-opacity=".28"/></pattern>`;
+    if (kind === "grid") return `<pattern id="${id}" width="2.6" height="2.6" patternUnits="userSpaceOnUse"><path d="M0 0H2.6M0 0V2.6" stroke="#000" stroke-opacity=".34" stroke-width=".7"/></pattern>`;
+    if (kind === "fresnel") return `<pattern id="${id}" width="4" height="2.2" patternUnits="userSpaceOnUse"><rect width="4" height=".8" fill="#fff" fill-opacity=".2"/></pattern>`;
+    return "";
+  }
+
+  function figure(p, shape, color, u) {
+    let defs = "", body = "";
+    if (p.style === "stick") {
+      const g = p.gap, dw = p.dotW;
+      for (const s of shape.strokes) body += `<path d="${s.d}" fill="none" stroke="${color}" stroke-width="${dw}" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0 ${g}"/>`;
+      for (const f of shape.fills) body += `<path d="${f.d}" fill="none" stroke="${color}" stroke-width="${dw}" stroke-linecap="round" stroke-dasharray="0 ${g}"/>`;
+      for (const c of shape.circles) {
+        const circ = 2 * Math.PI * c.r, n = Math.max(5, Math.round(circ / g));
+        body += `<circle cx="${f1(c.cx)}" cy="${f1(c.cy)}" r="${f1(c.r)}" fill="none" stroke="${color}" stroke-width="${dw}" stroke-linecap="round" stroke-dasharray="0 ${(circ / n).toFixed(3)}"/>`;
+      }
+      return { defs, body };
+    }
+    const mask = p.style === "ring"
+      ? silhouette(shape, p, p.ring, "#fff") + silhouette(shape, p, 0, "#000")
+      : silhouette(shape, p, 0, "#fff");
+    defs += `<mask id="m${u}">${mask}</mask>`;
+    if (p.style === "dots" || p.style === "ring") {
+      defs += dotPattern("d" + u, p, color, true);
+      body = `<g mask="url(#m${u})">${RECT} fill="url(#d${u})"/></g>`;
+    } else {
+      defs += `<linearGradient id="s${u}" x1="0" y1="0" x2=".7" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".32"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>`;
+      if (p.texture) defs += texturePattern("t" + u, p.texture);
+      body = `<g mask="url(#m${u})">${RECT} fill="${color}"/>${p.texture ? `${RECT} fill="url(#t${u})"/>` : ""}${RECT} fill="url(#s${u})"/></g>`;
+    }
+    return { defs, body };
+  }
+
+  function svgFor(p, o) {
+    const stop = o.mode === "stop";
+    const shape = shapeFor(p, stop, o.phase);
+    const color = stop ? (p.stopColor || RED) : p.color;
+    const f = figure(p, shape, color, o.u);
+    const led = p.style === "dots" || p.style === "ring";
+    const blur = o.big ? 3.2 : 2.4;
+    let defs = f.defs + `<filter id="f${o.u}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${blur}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+    let under = "";
+    if (led) {
+      // the unlit LEDs are faintly visible across the whole board, like a real matrix
+      defs += dotPattern("o" + o.u, p, "#fff", false);
+      under = `${RECT} fill="url(#o${o.u})" opacity=".05"/>`;
+    }
+    const g = o.lit ? `<g filter="url(#f${o.u})">${f.body}</g>` : `<g opacity=".085">${f.body}</g>`;
+    return `<svg viewBox="0 0 100 130" aria-hidden="true" focusable="false"><defs>${defs}</defs>${under}${g}</svg>`;
+  }
+
+  /* ================= signal timing ================= */
+  const NEXT = { walk: "flash", flash: "stop", stop: "walk" };
+  const BLINK = 450;
+
+  class Sig {
+    constructor(dur) { this.dur = dur; this.state = "stop"; this.start = 0; this.until = Infinity; this.powered = false; this.q = []; }
+    go(state, at, ms) { this.state = state; this.start = at; this.until = ms == null ? Infinity : at + ms; }
+    later(at, job) { this.q.push(Object.assign({ at }, job)); this.q.sort((a, b) => a.at - b.at); }
+    step(now) {
+      while (this.q.length && this.q[0].at <= now) {
+        const j = this.q.shift();
+        if (j.power) this.powered = true;
+        if (j.state) this.go(j.state, j.at, j.hold ? null : (j.ms != null ? j.ms : this.dur(j.state)));
+      }
+      let guard = 0;
+      while (now >= this.until && guard++ < 10) { const nx = NEXT[this.state]; this.go(nx, this.until, this.dur(nx)); }
+    }
+    lit(now) { return this.powered && (this.state !== "flash" || Math.floor((now - this.start) / BLINK) % 2 === 0); }
+    seconds(now) { return this.state === "flash" ? Math.max(0, Math.ceil((this.until - now) / 1000)) : null; }
+  }
+
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const gridDur = (s) => (s === "walk" ? rnd(6000, 10000) : s === "flash" ? 5000 : rnd(4000, 9000));
+
+  /* ================= build grid ================= */
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const FPS = 11, FRAMES = 12;
+  let animate = !reduced;
+  let mode = "cycle";
+
+  const gridEl = document.getElementById("grid");
+  const cards = CITIES.map((p, i) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "signal";
+    btn.dataset.family = familyOf(p);
+    btn.setAttribute("aria-label", `${p.name} signal, open crossing view`);
+    btn.innerHTML =
+      `<div class="housing"><div class="visor"></div><div class="lens"></div>` +
+      `<div class="foot"><span class="grille" aria-hidden="true"><i></i><i></i><i></i></span><span class="count" aria-hidden="true">88<span></span></span></div></div>` +
+      `<div class="meta"><span class="city">${p.name}</span><span class="kind">${kindOf(p)}</span></div>`;
+    gridEl.appendChild(btn);
+    const card = {
+      p, i, el: btn, lens: btn.querySelector(".lens"), count: btn.querySelector(".count span"),
+      sig: new Sig(gridDur), key: "", visible: true, wasPowered: false, off: Math.floor(Math.random() * FRAMES)
+    };
+    btn.addEventListener("click", () => openCrossing(i));
+    return card;
+  });
+
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) cards[+e.target.dataset.idx].visible = e.isIntersecting;
+    }, { rootMargin: "120px" });
+    cards.forEach((c) => { c.el.dataset.idx = c.i; io.observe(c.el); });
+  }
+
+  // delay for sweeps: a diagonal from the top-left corner of the grid
+  function sweepDelays(span) {
+    const vis = cards.filter((c) => !c.el.hidden);
+    const pos = vis.map((c) => c.el.offsetLeft + c.el.offsetTop * 0.8);
+    const lo = Math.min(...pos), hi = Math.max(...pos) || 1;
+    const out = new Map();
+    vis.forEach((c, k) => out.set(c, ((pos[k] - lo) / (hi - lo || 1)) * span));
+    cards.forEach((c) => { if (!out.has(c)) out.set(c, 0); });
+    return out;
+  }
+
+  function greenWave() {
+    setMode("cycle", true);
+    const now = performance.now(), d = sweepDelays(1500);
+    for (const c of cards) {
+      c.sig.q = [];
+      c.sig.powered = true;
+      c.sig.go("stop", now, null);
+      c.sig.later(now + 700 + d.get(c), { state: "walk", ms: 8000 });
+    }
+  }
+
+  function setMode(m, quiet) {
+    mode = m;
+    document.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
+    if (quiet) return;
+    const now = performance.now(), d = sweepDelays(700);
+    for (const c of cards) {
+      c.sig.q = [];
+      if (m === "cycle") c.sig.later(now + d.get(c), { state: c.sig.state, ms: gridDur(c.sig.state) * rnd(0.2, 1) });
+      else c.sig.later(now + d.get(c), { state: m, hold: true });
+    }
+  }
+
+  document.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
+  document.getElementById("waveBtn").addEventListener("click", greenWave);
+
+  const animBtn = document.getElementById("animBtn");
+  animBtn.setAttribute("aria-pressed", String(animate));
+  animBtn.addEventListener("click", () => { animate = !animate; animBtn.setAttribute("aria-pressed", String(animate)); });
+
+  document.querySelectorAll("[data-filter]").forEach((b) => b.addEventListener("click", () => {
+    const f = b.dataset.filter;
+    document.querySelectorAll("[data-filter]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    cards.forEach((c) => { c.el.hidden = f !== "all" && c.el.dataset.family !== f; });
+  }));
+
+  // power-on sequence: lamps come on red in a diagonal sweep, then a green wave follows
+  (function boot() {
+    const now = performance.now(), d = sweepDelays(900);
+    for (const c of cards) {
+      c.sig.later(now + 150 + d.get(c), { power: true, state: "stop", hold: true });
+      c.sig.later(now + 1500 + d.get(c) * 1.3, { state: "walk", ms: rnd(6000, 9000) });
+    }
+  })();
+
+  function paint(c, now, frame) {
+    const s = c.sig, lit = s.lit(now), st = s.state;
+    const moving = animate && s.powered && st !== "stop";
+    const fr = moving ? (frame + c.off) % FRAMES : -1;
+    const sec = s.seconds(now);
+    const key = `${st}|${lit}|${s.powered}|${fr}|${sec}`;
+    if (key === c.key) return;
+    c.key = key;
+    const walkMode = st !== "stop";
+    const phase = fr < 0 ? Math.PI / 2 : (fr / FRAMES) * Math.PI * 2;
+    c.lens.innerHTML = svgFor(c.p, { u: "c" + c.i, mode: walkMode ? "walk" : "stop", phase, lit });
+    c.lens.classList.toggle("on", lit);
+    c.lens.style.setProperty("--c", walkMode ? c.p.color : RED);
+    c.count.textContent = sec == null ? "" : String(sec);
+    if (s.powered && !c.wasPowered) {
+      c.wasPowered = true;
+      if (!reduced) {
+        c.lens.classList.add("flicker");
+        c.lens.addEventListener("animationend", () => c.lens.classList.remove("flicker"), { once: true });
+      }
+    }
+  }
+
+  /* ================= crossing view ================= */
+  const dlg = document.getElementById("crossing");
+  const $ = (id) => document.getElementById(id);
+  const lensR = $("lensR"), lensG = $("lensG"), mCount = $("mCount"), waitLamp = $("waitLamp");
+  const mState = $("mState"), mPip = $("mPip"), pushBtn = $("pushBtn"), soundBtn = $("soundBtn");
+  const msig = new Sig((s) => (s === "walk" ? 7000 : s === "flash" ? 6000 : 14000));
+  msig.powered = true;
+  let current = -1, mKey = "", waiting = false, lastState = "", soundOn = false, audio = null, nextTick = 0;
+
+  function openCrossing(i) {
+    current = (i + CITIES.length) % CITIES.length;
+    const p = CITIES[current], src = cards[current].sig, now = performance.now();
+    $("mCity").textContent = p.name;
+    $("mKind").textContent = kindOf(p);
+    $("mIndex").textContent = `${current + 1} / ${CITIES.length}`;
+    msig.q = [];
+    msig.go(src.state, src.start, null);
+    msig.until = isFinite(src.until) ? src.until : now + msig.dur(src.state);
+    waiting = false; mKey = ""; lastState = "";
+    if (!dlg.open) dlg.showModal();
+  }
+  $("closeBtn").addEventListener("click", () => dlg.close());
+  $("prevBtn").addEventListener("click", () => openCrossing(current - 1));
+  $("nextBtn").addEventListener("click", () => openCrossing(current + 1));
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  dlg.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") openCrossing(current - 1);
+    if (e.key === "ArrowRight") openCrossing(current + 1);
+  });
+
+  pushBtn.addEventListener("click", () => {
+    const now = performance.now();
+    pushBtn.classList.add("pressed");
+    setTimeout(() => pushBtn.classList.remove("pressed"), 140);
+    beep(1200, 0.06, 0.12);
+    if (msig.state === "stop" && !waiting) {
+      waiting = true;
+      msig.until = Math.min(msig.until, now + 2400);
+    }
+  });
+
+  soundBtn.addEventListener("click", () => {
+    soundOn = !soundOn;
+    soundBtn.setAttribute("aria-pressed", String(soundOn));
+    soundBtn.textContent = "Crossing sound: " + (soundOn ? "on" : "off");
+    if (soundOn) {
+      try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (e) { audio = null; }
+    }
+    nextTick = 0;
+  });
+
+  function beep(freq, len, vol) {
+    if (!soundOn || !audio) return;
+    const t = audio.currentTime, o = audio.createOscillator(), g = audio.createGain();
+    o.type = "square"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    o.connect(g).connect(audio.destination);
+    o.start(t); o.stop(t + len + 0.02);
+  }
+
+  const STATE_TEXT = { walk: "Walk", flash: "Finish crossing", stop: "Don’t walk" };
+  const STATE_PIP = { walk: "pip g", flash: "pip a", stop: "pip r" };
+
+  function paintCrossing(now, frame) {
+    msig.step(now);
+    const p = CITIES[current], st = msig.state, lit = msig.lit(now);
+    if (st !== lastState) {
+      if (st === "walk") waiting = false;
+      mState.textContent = STATE_TEXT[st];
+      mPip.className = STATE_PIP[st];
+      lastState = st;
+    }
+    waitLamp.classList.toggle("on", waiting);
+    const fr = animate && st !== "stop" ? frame % FRAMES : -1;
+    const sec = msig.seconds(now);
+    const key = `${current}|${st}|${lit}|${fr}|${sec}`;
+    if (key !== mKey) {
+      mKey = key;
+      const phase = fr < 0 ? Math.PI / 2 : (fr / FRAMES) * Math.PI * 2;
+      const redOn = st === "stop", greenOn = st !== "stop" && lit;
+      lensR.innerHTML = svgFor(p, { u: "mr", mode: "stop", phase: 0, lit: redOn, big: true });
+      lensG.innerHTML = svgFor(p, { u: "mg", mode: "walk", phase, lit: greenOn, big: true });
+      lensR.classList.toggle("on", redOn); lensR.style.setProperty("--c", RED);
+      lensG.classList.toggle("on", greenOn); lensG.style.setProperty("--c", p.color);
+      mCount.textContent = sec == null ? "" : String(sec);
+    }
+    // audible signal: slow locator tick while red, rapid ticking on walk
+    if (soundOn && now >= nextTick) {
+      if (st === "stop") { beep(620, 0.03, 0.08); nextTick = now + 1100; }
+      else if (st === "walk") { beep(1500, 0.012, 0.06); nextTick = now + 120; }
+      else { beep(900, 0.025, 0.07); nextTick = now + 500; }
+    }
+  }
+
+  /* ================= main loop ================= */
+  const nWalk = $("nWalk"), nFlash = $("nFlash"), nStop = $("nStop");
+  let lastCount = 0;
+  function loop(now) {
+    const frame = Math.floor(now / (1000 / FPS));
+    for (const c of cards) {
+      c.sig.step(now);
+      if (c.visible && !c.el.hidden) paint(c, now, frame);
+    }
+    if (dlg.open && current >= 0) paintCrossing(now, frame);
+    if (now - lastCount > 250) {
+      lastCount = now;
+      let w = 0, f = 0, s = 0;
+      for (const c of cards) { if (!c.sig.powered) continue; if (c.sig.state === "walk") w++; else if (c.sig.state === "flash") f++; else s++; }
+      nWalk.textContent = w; nFlash.textContent = f; nStop.textContent = s;
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
